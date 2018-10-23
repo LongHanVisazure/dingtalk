@@ -138,6 +138,9 @@ export default class DingTalk {
       app.once('ready', () => ready())
       app.once('window-all-closed', () => {
         if (!this.$tray.isDestroyed()) this.$tray.destroy()
+        if (process.platform !== 'darwin') {
+          app.quit()
+        }
       })
     })
   }
@@ -151,7 +154,9 @@ export default class DingTalk {
       .forEach(item => {
         if (!item.isDestroyed()) item.destroy()
       })
-    app.quit()
+    if (process.platform !== 'darwin') {
+      app.quit()
+    }
   }
 
   /**
@@ -191,10 +196,10 @@ export default class DingTalk {
 
   /**
    * 显示邮箱窗口
-   * @param {String} url
+   * @param {Object} storage
    */
-  showEmailWin (url) {
-    this.$emailWin = emailWin(this)(url)
+  showEmailWin (storage) {
+    this.$emailWin = emailWin(this)(storage)
   }
 
   /**

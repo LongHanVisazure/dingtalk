@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import download from './download'
 import contextMenu from './contextMenu'
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, screen } from 'electron'
 
 export default dingtalk => () => {
   if (dingtalk.$mainWin) {
@@ -70,6 +70,14 @@ export default dingtalk => () => {
     }
   })
 
+  // 主窗口导航拦截
+  $win.webContents.on('will-navigate', (e, url) => {
+    e.preventDefault()
+    if (url !== 'about:blank' && url !== 'https://im.dingtalk.com/') {
+      shell.openExternal(url)
+    }
+  })
+
   ipcMain.on('MAINWIN:window-minimize', () => $win.minimize())
 
   ipcMain.on('MAINWIN:window-maximization', () => {
@@ -81,18 +89,34 @@ export default dingtalk => () => {
   })
 
   ipcMain.on('MAINWIN:window-close', () => $win.hide())
-  ipcMain.on('MAINWIN:open-email', (e, url) => dingtalk.showEmailWin(url))
+  ipcMain.on('MAINWIN:open-email', (e, storage) => dingtalk.showEmailWin(storage))
 
   ipcMain.on('MAINWIN:window-show', () => {
     $win.show()
     $win.focus()
   })
   ipcMain.on('MAINWIN:badge', (e, count) => {
+    app.setBadgeCount(count)
+    const isHScaleFactor = screen.getPrimaryDisplay().scaleFactor > 1
+    let trayIcon = count
+      ? isHScaleFactor
+        ? path.join(app.getAppPath(), './icon/64x64-n.png')
+        : path.join(app.getAppPath(), './icon/24x24-n.png')
+      : isHScaleFactor
+        ? path.join(app.getAppPath(), './icon/64x64.png')
+        : path.join(app.getAppPath(), './icon/24x24.png')
+    if (process.platform === 'darwin') {
+      trayIcon = count
+        ? path.join(app.getAppPath(), './icon/16x16-n.png')
+        : path.join(app.getAppPath(), './icon/16x16.png')
+    }
+    if (dingtalk.$tray) {
+      dingtalk.$tray.setImage(trayIcon)
+    }
     if (app.dock) {
       app.dock.show()
       app.dock.bounce('critical')
     }
-    app.setBadgeCount(count)
   })
 
   download($win)
